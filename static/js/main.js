@@ -39,6 +39,7 @@ const elements = {
     tweetPreviewText: document.getElementById('tweet-preview-text'),
     copyTweetBtn: document.getElementById('copy-tweet-btn'),
     postTweetBtn: document.getElementById('post-tweet-btn'),
+    themeToggleBtn: document.getElementById('theme-toggle-btn'),
     
     // Toast
     toastContainer: document.getElementById('toast-container')
@@ -46,6 +47,7 @@ const elements = {
 
 // Initialize Application
 document.addEventListener('DOMContentLoaded', () => {
+    initTheme();
     setupEventListeners();
     fetchReleaseNotes();
 });
@@ -58,6 +60,9 @@ function setupEventListeners() {
     
     // Export CSV Button
     elements.exportCsvBtn.addEventListener('click', exportToCSV);
+    
+    // Theme Toggle Button
+    elements.themeToggleBtn.addEventListener('click', toggleTheme);
     
     // Search Input
     elements.searchInput.addEventListener('input', (e) => {
@@ -595,6 +600,33 @@ function exportToCSV() {
     document.body.removeChild(link);
     
     showToast(`Exported ${itemsToExport.length} updates to CSV!`, 'success');
+}
+
+// Theme Initialization
+function initTheme() {
+    const savedTheme = localStorage.getItem('theme') || 'dark';
+    if (savedTheme === 'light') {
+        document.body.classList.add('light-theme');
+        document.body.classList.remove('dark-theme');
+    } else {
+        document.body.classList.add('dark-theme');
+        document.body.classList.remove('light-theme');
+    }
+}
+
+// Toggle Theme between light and dark modes
+function toggleTheme() {
+    if (document.body.classList.contains('light-theme')) {
+        document.body.classList.remove('light-theme');
+        document.body.classList.add('dark-theme');
+        localStorage.setItem('theme', 'dark');
+        showToast('Switched to Dark Mode', 'success');
+    } else {
+        document.body.classList.add('light-theme');
+        document.body.classList.remove('dark-theme');
+        localStorage.setItem('theme', 'light');
+        showToast('Switched to Light Mode', 'success');
+    }
 }
 
 // Show standard toast notifications
