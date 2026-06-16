@@ -619,7 +619,13 @@ body {
     color: var(--text-secondary);
 }
 
-.tweet-single-btn {
+.card-footer-buttons {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.tweet-single-btn, .copy-card-btn {
     background: transparent;
     border: none;
     color: var(--text-muted);
@@ -634,13 +640,19 @@ body {
     border-radius: var(--radius-sm);
 }
 
-.note-card:hover .tweet-single-btn {
+.note-card:hover .tweet-single-btn,
+.note-card:hover .copy-card-btn {
     color: var(--text-secondary);
 }
 
 .tweet-single-btn:hover {
     color: var(--color-twitter) !important;
     background: rgba(29, 155, 240, 0.08);
+}
+
+.copy-card-btn:hover {
+    color: var(--color-feature) !important;
+    background: rgba(16, 185, 129, 0.08);
 }
 
 /* Floating Selection Bar */

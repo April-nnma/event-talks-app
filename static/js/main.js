@@ -11,6 +11,7 @@ let state = {
 // DOM Elements
 const elements = {
     refreshBtn: document.getElementById('refresh-btn'),
+    exportCsvBtn: document.getElementById('export-csv-btn'),
     lastUpdatedText: document.getElementById('last-updated-text'),
     searchInput: document.getElementById('search-input'),
     clearSearchBtn: document.getElementById('clear-search-btn'),
@@ -54,6 +55,9 @@ function setupEventListeners() {
     // Refresh Button
     elements.refreshBtn.addEventListener('click', fetchReleaseNotes);
     elements.retryBtn.addEventListener('click', fetchReleaseNotes);
+    
+    // Export CSV Button
+    elements.exportCsvBtn.addEventListener('click', exportToCSV);
     
     // Search Input
     elements.searchInput.addEventListener('input', (e) => {
@@ -333,12 +337,21 @@ function createNoteCard(item) {
                     <line x1="10" y1="14" x2="21" y2="3"></line>
                 </svg>
             </a>
-            <button class="tweet-single-btn" title="Tweet this update" onclick="event.stopPropagation(); tweetSingleItem('${item.id}');">
-                <svg class="icon" viewBox="0 0 24 24" fill="currentColor">
-                    <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/>
-                </svg>
-                <span>Tweet</span>
-            </button>
+            <div class="card-footer-buttons">
+                <button class="copy-card-btn" title="Copy update text" onclick="event.stopPropagation(); copyCardText('${item.id}');">
+                    <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+                        <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+                    </svg>
+                    <span>Copy</span>
+                </button>
+                <button class="tweet-single-btn" title="Tweet this update" onclick="event.stopPropagation(); tweetSingleItem('${item.id}');">
+                    <svg class="icon" viewBox="0 0 24 24" fill="currentColor">
+                        <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/>
+                    </svg>
+                    <span>Tweet</span>
+                </button>
+            </div>
         </div>
     `;
     
@@ -516,6 +529,72 @@ function postTweetToTwitter() {
     const intentUrl = `https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}`;
     window.open(intentUrl, '_blank', 'noopener,noreferrer');
     closeComposerModal();
+}
+
+// Copy single card text to clipboard
+function copyCardText(itemId) {
+    const item = state.items.find(i => i.id === itemId);
+    if (!item) return;
+    
+    const textToCopy = `BigQuery ${item.categoryLabel} (${item.date}):\n${item.text}\n\nRead more: ${item.link}`;
+    
+    navigator.clipboard.writeText(textToCopy).then(() => {
+        showToast('Update copied to clipboard!', 'success');
+    }).catch(err => {
+        console.error('Failed to copy: ', err);
+        showToast('Failed to copy update.', 'error');
+    });
+}
+
+// Export filtered release notes to CSV file
+function exportToCSV() {
+    let itemsToExport = state.items;
+    
+    // Apply category filter if active
+    if (state.categoryFilter !== 'all') {
+        itemsToExport = itemsToExport.filter(item => item.category === state.categoryFilter);
+    }
+    
+    // Apply search filter if active
+    if (state.searchQuery) {
+        itemsToExport = itemsToExport.filter(item => 
+            item.text.toLowerCase().includes(state.searchQuery) ||
+            item.date.toLowerCase().includes(state.searchQuery) ||
+            item.categoryLabel.toLowerCase().includes(state.searchQuery)
+        );
+    }
+    
+    if (itemsToExport.length === 0) {
+        showToast('No items to export!', 'error');
+        return;
+    }
+    
+    // Construct CSV content
+    const headers = ['Date', 'Category', 'Description', 'Link'];
+    const rows = itemsToExport.map(item => [
+        item.date,
+        item.categoryLabel,
+        item.text,
+        item.link
+    ]);
+    
+    const csvContent = [
+        headers.join(','),
+        ...rows.map(row => row.map(val => `"${val.replace(/"/g, '""')}"`).join(','))
+    ].join('\n');
+    
+    // Create file and download in browser
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.setAttribute('href', url);
+    link.setAttribute('download', `bigquery_release_notes_${state.categoryFilter}_${new Date().toISOString().slice(0,10)}.csv`);
+    link.style.visibility = 'hidden';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    
+    showToast(`Exported ${itemsToExport.length} updates to CSV!`, 'success');
 }
 
 // Show standard toast notifications
